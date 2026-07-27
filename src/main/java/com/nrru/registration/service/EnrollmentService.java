@@ -2,9 +2,10 @@ package com.nrru.registration.service;
 
 import com.nrru.registration.dto.ApiResponse;
 import com.nrru.registration.entity.Course;
-import com.nrru.registration.entity.Student;
 import com.nrru.registration.entity.Enrollment;
 import com.nrru.registration.entity.Schedule;
+import com.nrru.registration.entity.Student;
+import com.nrru.registration.exception.*;
 import com.nrru.registration.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -38,22 +39,22 @@ public class EnrollmentService {
 
         // 1. ดึงข้อมูลนักศึกษา
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new IllegalArgumentException("ไม่พบข้อมูลนักศึกษา"));
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบข้อมูลนักศึกษา"));
 
         // 2. 🔥 ล็อกแถวรายวิชา (Pessimistic Lock) ป้องกัน Over-booking
         Course course = courseRepository.findByIdWithLock(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("ไม่พบรายวิชา"));
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบรายวิชา"));
 
-        // 3. เช็คว่ามีที่นั่งว่างไหม (ใช้ค่าล่าสุดจาก Database)
+        // 3. เช็คว่ามีที่นั่งว่างไหม
         if (course.getEnrolledStudentCount() >= course.getSeatCapacity()) {
-            return new ApiResponse("ที่นั่งเต็มแล้ว!", false);
+            throw new SeatFullException("ที่นั่งเต็มแล้ว!");
         }
 
         // 4. เช็คว่านักศึกษาคนนี้ลงวิชานี้ไปแล้วหรือยัง (ป้องกันการลงซ้ำ)
         boolean alreadyEnrolled = enrollmentRepository
                 .existsByStudentStudentIdAndCourseCourseId(studentId, courseId);
         if (alreadyEnrolled) {
-            return new ApiResponse("คุณลงทะเบียนวิชานี้ไปแล้ว!", false);
+            throw new RuntimeException("คุณลงทะเบียนวิชานี้ไปแล้ว!");
         }
 
         // 5. เช็ควิชาบังคับก่อน (Prerequisite)
@@ -62,11 +63,11 @@ public class EnrollmentService {
             boolean passed = enrollmentRepository
                     .existsByStudentStudentIdAndCourseCourseIdAndEnrollmentStatus(studentId, prereqId, "REGISTERED");
             if (!passed) {
-                return new ApiResponse("คุณยังไม่ผ่านวิชาบังคับก่อน!", false);
+                throw new PrerequisiteNotMetException("คุณยังไม่ผ่านวิชาบังคับก่อน!");
             }
         }
 
-        // 6. เช็คเวลาเรียนทับซ้อน/ตารางชนกัน (Schedule Conflict)
+        // 6. เช็คเวลาเรียนทับซ้อน
         List<Schedule> newCourseSchedules = scheduleRepository.findByCourse_CourseId(courseId);
         for (Schedule schedule : newCourseSchedules) {
             List<Schedule> conflicts = scheduleRepository.findConflictingSchedules(
@@ -76,7 +77,7 @@ public class EnrollmentService {
                     schedule.getEndTime()
             );
             if (!conflicts.isEmpty()) {
-                return new ApiResponse("เวลาเรียนทับซ้อนกับวิชาอื่นที่คุณลงทะเบียนไว้!", false);
+                throw new ScheduleConflictException("เวลาเรียนทับซ้อนกับวิชาอื่นที่คุณลงทะเบียนไว้!");
             }
         }
 
@@ -90,8 +91,7 @@ public class EnrollmentService {
         enrollmentRepository.save(enrollment);
 
         // 8. อัปเดตจำนวนนักศึกษาที่ลงทะเบียน
-        int currentCount = course.getEnrolledStudentCount() != null ? course.getEnrolledStudentCount() : 0;
-        course.setEnrolledStudentCount(currentCount + 1);
+        course.setEnrolledStudentCount(course.getEnrolledStudentCount() + 1);
         courseRepository.save(course);
 
         return new ApiResponse("ลงทะเบียนสำเร็จ!", true);
@@ -99,26 +99,25 @@ public class EnrollmentService {
 
     @Transactional
     public ApiResponse dropCourse(Long studentId, Long courseId) {
+
         // 1. ค้นหาข้อมูลการลงทะเบียน
         Enrollment enrollment = enrollmentRepository
                 .findByStudentStudentIdAndCourseCourseId(studentId, courseId)
-                .orElse(null);
-
-        if (enrollment == null) {
-            return new ApiResponse("ไม่พบข้อมูลการลงทะเบียนวิชานี้", false);
-        }
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบข้อมูลการลงทะเบียนวิชานี้"));
 
         if ("DROPPED".equals(enrollment.getEnrollmentStatus())) {
-            return new ApiResponse("คุณได้ถอนวิชานี้ไปแล้ว!", false);
+            throw new RuntimeException("คุณได้ถอนวิชานี้ไปแล้ว!");
         }
 
         // 2. ปรับสถานะเป็น DROPPED
         enrollment.setEnrollmentStatus("DROPPED");
         enrollmentRepository.save(enrollment);
 
-        // 3. ลดจำนวนนักศึกษาที่ลงทะเบียนในวิชานี้
-        Course course = courseRepository.findByIdWithLock(courseId).orElse(null);
-        if (course != null && course.getEnrolledStudentCount() != null && course.getEnrolledStudentCount() > 0) {
+        // 3. ลดจำนวนนักศึกษาที่ลงทะเบียน
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบรายวิชา"));
+
+        if (course.getEnrolledStudentCount() > 0) {
             course.setEnrolledStudentCount(course.getEnrolledStudentCount() - 1);
             courseRepository.save(course);
         }
