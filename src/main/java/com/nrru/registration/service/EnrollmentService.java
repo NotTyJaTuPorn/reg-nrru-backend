@@ -4,6 +4,7 @@ import com.nrru.registration.dto.ApiResponse;
 import com.nrru.registration.entity.Course;
 import com.nrru.registration.entity.Student;
 import com.nrru.registration.entity.Enrollment;
+import com.nrru.registration.entity.Schedule;
 import com.nrru.registration.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -65,7 +66,21 @@ public class EnrollmentService {
             }
         }
 
-        // 6. สร้าง Enrollment record
+        // 6. เช็คเวลาเรียนทับซ้อน/ตารางชนกัน (Schedule Conflict)
+        List<Schedule> newCourseSchedules = scheduleRepository.findByCourse_CourseId(courseId);
+        for (Schedule schedule : newCourseSchedules) {
+            List<Schedule> conflicts = scheduleRepository.findConflictingSchedules(
+                    studentId,
+                    schedule.getWeekdayCode(),
+                    schedule.getStartTime(),
+                    schedule.getEndTime()
+            );
+            if (!conflicts.isEmpty()) {
+                return new ApiResponse("เวลาเรียนทับซ้อนกับวิชาอื่นที่คุณลงทะเบียนไว้!", false);
+            }
+        }
+
+        // 7. สร้าง Enrollment record
         Enrollment enrollment = new Enrollment();
         enrollment.setStudent(student);
         enrollment.setCourse(course);
@@ -74,9 +89,44 @@ public class EnrollmentService {
 
         enrollmentRepository.save(enrollment);
 
-        // 7. อัปเดตจำนวนนักศึกษาที่ลงทะเบียน
+        // 8. อัปเดตจำนวนนักศึกษาที่ลงทะเบียน
+        int currentCount = course.getEnrolledStudentCount() != null ? course.getEnrolledStudentCount() : 0;
+        course.setEnrolledStudentCount(currentCount + 1);
         courseRepository.save(course);
 
         return new ApiResponse("ลงทะเบียนสำเร็จ!", true);
+    }
+
+    @Transactional
+    public ApiResponse dropCourse(Long studentId, Long courseId) {
+        // 1. ค้นหาข้อมูลการลงทะเบียน
+        Enrollment enrollment = enrollmentRepository
+                .findByStudentStudentIdAndCourseCourseId(studentId, courseId)
+                .orElse(null);
+
+        if (enrollment == null) {
+            return new ApiResponse("ไม่พบข้อมูลการลงทะเบียนวิชานี้", false);
+        }
+
+        if ("DROPPED".equals(enrollment.getEnrollmentStatus())) {
+            return new ApiResponse("คุณได้ถอนวิชานี้ไปแล้ว!", false);
+        }
+
+        // 2. ปรับสถานะเป็น DROPPED
+        enrollment.setEnrollmentStatus("DROPPED");
+        enrollmentRepository.save(enrollment);
+
+        // 3. ลดจำนวนนักศึกษาที่ลงทะเบียนในวิชานี้
+        Course course = courseRepository.findByIdWithLock(courseId).orElse(null);
+        if (course != null && course.getEnrolledStudentCount() != null && course.getEnrolledStudentCount() > 0) {
+            course.setEnrolledStudentCount(course.getEnrolledStudentCount() - 1);
+            courseRepository.save(course);
+        }
+
+        return new ApiResponse("ถอนวิชาสำเร็จ!", true);
+    }
+
+    public List<Enrollment> getMySchedule(Long studentId) {
+        return enrollmentRepository.findByStudentStudentIdAndEnrollmentStatus(studentId, "REGISTERED");
     }
 }

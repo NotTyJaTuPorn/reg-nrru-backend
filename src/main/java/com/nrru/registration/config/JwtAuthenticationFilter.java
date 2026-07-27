@@ -31,9 +31,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtUtil.validateToken(token)) {
                 String loginId = jwtUtil.getLoginId(token);
                 String role = jwtUtil.getRole(token);
-                List<GrantedAuthority> authorities = role != null ? List.of(new SimpleGrantedAuthority(role)) : List.of();
+                Long userId = jwtUtil.extractUserId(token);
+
+                String authorityName = (role != null && !role.startsWith("ROLE_")) ? "ROLE_" + role : role;
+                List<GrantedAuthority> authorities = authorityName != null ? List.of(new SimpleGrantedAuthority(authorityName)) : List.of();
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(loginId, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                // ส่ง userId ไปให้ Service ใช้งานผ่าน request attribute
+                request.setAttribute("userId", userId);
+                request.setAttribute("role", role);
             }
         }
         filterChain.doFilter(request, response);

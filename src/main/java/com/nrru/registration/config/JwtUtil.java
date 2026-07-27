@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -24,12 +25,13 @@ public class JwtUtil {
         this.expirationMillis = expirationMillis;
     }
 
-    public String generateToken(String loginId, String role) {
+    public String generateToken(String loginId, String role, Long userId) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + expirationMillis);
         return JWT.create()
                 .withSubject(loginId)
                 .withClaim("role", role)
+                .withClaim("userId", userId)
                 .withIssuedAt(now)
                 .withExpiresAt(exp)
                 .sign(algorithm);
@@ -53,4 +55,10 @@ public class JwtUtil {
         DecodedJWT jwt = verifier.verify(token);
         return jwt.getClaim("role").asString();
     }
+
+    public Long extractUserId(String token) {
+        DecodedJWT jwt = verifier.verify(token);
+        return jwt.getClaim("userId").asLong();
+    }
+
 }

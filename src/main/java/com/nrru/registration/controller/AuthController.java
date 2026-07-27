@@ -43,13 +43,13 @@ public class AuthController {
         }
 
         // สร้าง JWT Token
-        String token = jwtUtil.generateToken(user.getLoginId(), user.getRoleName());
+        String token = jwtUtil.generateToken(user.getLoginId(), user.getRoleName(), user.getUserId());
 
         return ResponseEntity.ok(Map.of(
-                "token", token,
-                "role", user.getRoleName(),
-                "loginId", user.getLoginId(),
-                "fullName", user.getFirstNameTh() + " " + user.getLastNameTh()
+            "token", token,
+            "role", user.getRoleName(),
+            "loginId", user.getLoginId(),
+            "fullName", user.getFirstNameTh() + " " + user.getLastNameTh()
         ));
     }
 
