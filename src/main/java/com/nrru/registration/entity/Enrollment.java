@@ -19,14 +19,16 @@ public class Enrollment {
     @Column(name = "enrollment_id")
     private Long enrollmentId;
 
-    @Column(name = "student_id")
-    private Long studentId;
+    @ManyToOne
+    @JoinColumn(name = "student_id", nullable = false)
+    private Student student;
 
-    @Column(name = "course_id")
-    private Long courseId;
+    @ManyToOne
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
     @Column(name = "enrollment_datetime")
-    private LocalDateTime enrollmentDatetime;
+    private LocalDateTime enrolledAt;
 
     @Column(name = "enrollment_status", length = 20)
     private String enrollmentStatus = "REGISTERED";
@@ -34,9 +36,20 @@ public class Enrollment {
     @Column(name = "final_grade", length = 2)
     private String finalGrade;
 
-    @Column(name = "created_datetime")
-    private LocalDateTime createdDatetime = LocalDateTime.now();
+    @Column(name = "created_datetime", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_datetime")
-    private LocalDateTime updatedDatetime = LocalDateTime.now();
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

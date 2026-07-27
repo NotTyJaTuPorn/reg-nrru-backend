@@ -15,7 +15,7 @@ import java.util.Optional;
 public interface CourseRepository  extends JpaRepository<Course, Long> {
     Optional<Course> findByCourseCode(String courseCode);
 
-    List<Course> findBySemesterCodeAndAcademicYear(String semesterCode, String academicYear);
+    List<Course> findBySemesterCodeAndAcademicYear(String semesterCode, Integer academicYear);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM Course c WHERE c.courseId = :courseId")

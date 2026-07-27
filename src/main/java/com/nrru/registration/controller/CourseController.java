@@ -22,7 +22,7 @@ public class CourseController {
     @GetMapping
     public ResponseEntity<List<Course>> getCourses(
             @RequestParam String semester,
-            @RequestParam String year) {
+            @RequestParam Integer year) {
         List<Course> courses = courseService.getCoursesBySemester(semester, year);
         return ResponseEntity.ok(courses);
     }
@@ -39,7 +39,7 @@ public class CourseController {
     @GetMapping("/{courseId}")
     public ResponseEntity<Course> getCourseById(@PathVariable Long courseId) {
         Course course = courseService.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("ไม่พบวิชา"));
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบวิชา"));
         return ResponseEntity.ok(course);
     }
 }

@@ -16,7 +16,7 @@ public class CourseService {
         this.courseRepository = courseRepository;
     }
 
-    public List<Course> getCoursesBySemester(String semesterCode, String academicYear) {
+    public List<Course> getCoursesBySemester(String semesterCode, Integer academicYear) {
         return courseRepository.findBySemesterCodeAndAcademicYear(semesterCode, academicYear);
     }
 

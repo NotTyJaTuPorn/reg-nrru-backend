@@ -12,16 +12,18 @@ import java.util.Optional;
 @Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
-    List<Enrollment> findByStudentId(Long studentId);
+    List<Enrollment> findByStudentStudentId(Long studentId);
 
-    Optional<Enrollment> findByStudentIdAndCourseId(Long studentId, Long courseId);
+    Optional<Enrollment> findByStudentStudentIdAndCourseCourseId(Long studentId, Long courseId);
 
-    boolean existsByStudentIdAndCourseId(Long studentId, Long courseId);
+    boolean existsByStudentStudentIdAndCourseCourseId(Long studentId, Long courseId);
 
-    long countByCourseIdAndEnrollmentStatus(Long courseId, String status);
+    long countByCourseCourseIdAndEnrollmentStatus(Long courseId, String status);
 
-    List<Enrollment> findByStudentIdAndEnrollmentStatus(Long studentId, String status);
+    List<Enrollment> findByStudentStudentIdAndEnrollmentStatus(Long studentId, String status);
 
-    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.courseId = :courseId AND e.enrollmentStatus = 'REGISTERED'")
+    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.course.courseId = :courseId AND e.enrollmentStatus = 'REGISTERED'")
     long countRegisteredStudentsByCourseId(@Param("courseId") Long courseId);
+
+    boolean existsByStudentStudentIdAndCourseCourseIdAndEnrollmentStatus(Long studentId, Long prereqId, String status);
 }
