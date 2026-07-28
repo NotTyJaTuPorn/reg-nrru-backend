@@ -55,6 +55,7 @@ CREATE TABLE students (
                           cumulative_gpa DECIMAL(3,2) DEFAULT 0.00,
                           accumulated_credits INT DEFAULT 0,
                           tuition_paid BOOLEAN DEFAULT FALSE,
+                          is_registration_confirmed BOOLEAN DEFAULT FALSE,
                           created_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                           updated_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -127,6 +128,7 @@ CREATE TABLE registration_slots (
                                     semester_code VARCHAR(10) NOT NULL,
                                     academic_year INT NOT NULL,
                                     target_year INT,
+                                    slot_type VARCHAR(20) DEFAULT 'REGULAR',
                                     slot_start_datetime TIMESTAMP NOT NULL,
                                     slot_end_datetime TIMESTAMP NOT NULL,
                                     is_active_flag BOOLEAN DEFAULT TRUE,

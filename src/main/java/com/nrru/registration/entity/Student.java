@@ -47,6 +47,9 @@ public class Student {
     @Column(name = "tuition_paid")
     private Boolean tuitionPaid = false;
 
+    @Column(name = "is_registration_confirmed")
+    private Boolean isRegistrationConfirmed = false;
+
     @Column(name = "created_datetime")
     private LocalDateTime createdDatetime = LocalDateTime.now();
 

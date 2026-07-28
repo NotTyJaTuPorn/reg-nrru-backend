@@ -88,4 +88,38 @@ public class EnrollmentController {
         List<Enrollment> schedule = enrollmentService.getMySchedule((long) student.getStudentId());
         return ResponseEntity.ok(schedule);
     }
+
+    // ✅ ยืนยันการลงทะเบียนเรียน
+    @PostMapping("/confirm")
+    public ResponseEntity<ApiResponse> confirmRegistration(HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).body(new ApiResponse("Unauthorized", false));
+        }
+
+        Student student = studentService.findByUserId(userId).orElse(null);
+        if (student == null) {
+            return ResponseEntity.status(404).body(new ApiResponse("ไม่พบข้อมูลนักศึกษาสำหรับผู้ใช้งานนี้", false));
+        }
+
+        ApiResponse response = enrollmentService.confirmRegistration((long) student.getStudentId());
+        return ResponseEntity.ok(response);
+    }
+
+    // ✅ ตรวจสอบสถานะการลงทะเบียนเรียนและช่วงเวลาเปิด-ปิด
+    @GetMapping("/status")
+    public ResponseEntity<?> getStatus(HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Student student = studentService.findByUserId(userId).orElse(null);
+        if (student == null) {
+            return ResponseEntity.status(404).body(new ApiResponse("ไม่พบข้อมูลนักศึกษาสำหรับผู้ใช้งานนี้", false));
+        }
+
+        java.util.Map<String, Object> status = enrollmentService.getRegistrationStatus((long) student.getStudentId());
+        return ResponseEntity.ok(status);
+    }
 }

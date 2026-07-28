@@ -21,17 +21,41 @@ public class EnrollmentService {
     private final StudentRepository studentRepository;
     private final ScheduleRepository scheduleRepository;
     private final CoursePrerequisiteRepository prerequisiteRepository;
+    private final RegistrationSlotRepository registrationSlotRepository;
 
     public EnrollmentService(EnrollmentRepository enrollmentRepository,
                              CourseRepository courseRepository,
                              StudentRepository studentRepository,
                              ScheduleRepository scheduleRepository,
-                             CoursePrerequisiteRepository prerequisiteRepository) {
+                             CoursePrerequisiteRepository prerequisiteRepository,
+                             RegistrationSlotRepository registrationSlotRepository) {
         this.enrollmentRepository = enrollmentRepository;
         this.courseRepository = courseRepository;
         this.studentRepository = studentRepository;
         this.scheduleRepository = scheduleRepository;
         this.prerequisiteRepository = prerequisiteRepository;
+        this.registrationSlotRepository = registrationSlotRepository;
+    }
+
+    private void validateRegistrationWindow(Student student) {
+        LocalDateTime now = LocalDateTime.now();
+        List<com.nrru.registration.entity.RegistrationSlot> activeSlots = registrationSlotRepository.findActiveSlotsAt(now);
+
+        // Filter slot matching target year if specified
+        com.nrru.registration.entity.RegistrationSlot validSlot = activeSlots.stream()
+                .filter(s -> s.getTargetYear() == null || s.getTargetYear() == student.getCurrentYear())
+                .findFirst()
+                .orElse(null);
+
+        if (validSlot == null) {
+            throw new RuntimeException("ระบบปิดให้บริการลงทะเบียนเรียนในขณะนี้");
+        }
+
+        // Check confirmation status if slot is REGULAR
+        String type = validSlot.getSlotType() != null ? validSlot.getSlotType() : "REGULAR";
+        if ("REGULAR".equalsIgnoreCase(type) && Boolean.TRUE.equals(student.getIsRegistrationConfirmed())) {
+            throw new RuntimeException("ท่านได้ยืนยันการลงทะเบียนเรียนเรียบร้อยแล้ว ไม่สามารถแก้ไขรายวิชาได้ในขณะนี้ (สามารถแก้ไขได้ในช่วงเปิดระบบเพิ่ม-ลดรายวิชา)");
+        }
     }
 
     @Transactional
@@ -40,6 +64,9 @@ public class EnrollmentService {
         // 1. ดึงข้อมูลนักศึกษา
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("ไม่พบข้อมูลนักศึกษา"));
+
+        // 1.1 เช็คช่วงเวลาลงทะเบียนและการยืนยัน
+        validateRegistrationWindow(student);
 
         // 2. 🔥 ล็อกแถวรายวิชา (Pessimistic Lock) ป้องกัน Over-booking
         Course course = courseRepository.findByIdWithLock(courseId)
@@ -100,6 +127,12 @@ public class EnrollmentService {
     @Transactional
     public ApiResponse dropCourse(Long studentId, Long courseId) {
 
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบข้อมูลนักศึกษา"));
+
+        // เช็คช่วงเวลาลงทะเบียนและการยืนยัน
+        validateRegistrationWindow(student);
+
         // 1. ค้นหาข้อมูลการลงทะเบียน
         Enrollment enrollment = enrollmentRepository
                 .findByStudentStudentIdAndCourseCourseId(studentId, courseId)
@@ -123,6 +156,56 @@ public class EnrollmentService {
         }
 
         return new ApiResponse("ถอนวิชาสำเร็จ!", true);
+    }
+
+    @Transactional
+    public ApiResponse confirmRegistration(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบข้อมูลนักศึกษา"));
+
+        student.setIsRegistrationConfirmed(true);
+        studentRepository.save(student);
+        return new ApiResponse("ยืนยันการลงทะเบียนเรียนเรียบร้อยแล้ว!", true);
+    }
+
+    public java.util.Map<String, Object> getRegistrationStatus(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบข้อมูลนักศึกษา"));
+
+        LocalDateTime now = LocalDateTime.now();
+        List<com.nrru.registration.entity.RegistrationSlot> activeSlots = registrationSlotRepository.findActiveSlotsAt(now);
+
+        com.nrru.registration.entity.RegistrationSlot validSlot = activeSlots.stream()
+                .filter(s -> s.getTargetYear() == null || s.getTargetYear() == student.getCurrentYear())
+                .findFirst()
+                .orElse(null);
+
+        boolean isConfirmed = Boolean.TRUE.equals(student.getIsRegistrationConfirmed());
+        boolean canModify = false;
+        String message = "ระบบปิดให้บริการลงทะเบียนเรียนในขณะนี้";
+
+        if (validSlot != null) {
+            String slotType = validSlot.getSlotType() != null ? validSlot.getSlotType() : "REGULAR";
+            if ("ADD_DROP".equalsIgnoreCase(slotType)) {
+                canModify = true;
+                message = "อยู่ในช่วงเวลาเพิ่ม-ลดรายวิชา (Add/Drop Period)";
+            } else {
+                if (isConfirmed) {
+                    canModify = false;
+                    message = "ยืนยันการลงทะเบียนเรียนเรียบร้อยแล้ว (ล็อกการแก้ไขจนกว่าจะถึงช่วงเพิ่ม-ลดรายวิชา)";
+                } else {
+                    canModify = true;
+                    message = "อยู่ในช่วงเวลาเปิดลงทะเบียนเรียนตามปกติ";
+                }
+            }
+        }
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("isConfirmed", isConfirmed);
+        result.put("activeSlot", validSlot);
+        result.put("canModify", canModify);
+        result.put("message", message);
+        return result;
     }
 
     public List<Enrollment> getMySchedule(Long studentId) {

@@ -27,6 +27,9 @@ public class RegistrationSlot {
     @Column(name = "target_year")
     private Integer targetYear;
 
+    @Column(name = "slot_type", length = 20)
+    private String slotType = "REGULAR";
+
     @Column(name = "slot_start_datetime", nullable = false)
     private LocalDateTime slotStartDatetime;
 
