@@ -22,4 +22,6 @@ public interface CourseRepository  extends JpaRepository<Course, Long> {
     Optional<Course> findByIdWithLock(@Param("courseId") Long courseId);
 
     long countBySemesterCodeAndAcademicYear(String semesterCode, Integer academicYear);
+
+    List<Course> findByLecturer_UserId(Long lecturerUserId);
 }

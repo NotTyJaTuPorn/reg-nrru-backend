@@ -67,3 +67,25 @@ Updated with latest JWT Authentication, Enrollment Controller, and Service layer
 - Joined lecturer data with user details (`LecturerDetailDTO`) and updated admin endpoints.
 - Added student and lecturer edit endpoints.
 - Added `/api/students/profile` endpoint.
+
+---
+## Backend File Structure
+
+```text
+reg-nrru-backend/
+├── build.gradle               # Gradle build script (dependencies)
+├── src/
+│   ├── main/
+│   │   ├── java/com/nrru/registration/
+│   │   │   ├── config/        # Security, JWT, CORS configurations
+│   │   │   ├── controller/    # REST endpoints (Admin, Auth, Course, Enrollment, Lecturer, Student)
+│   │   │   ├── dto/           # Data Transfer Objects (Requests/Responses)
+│   │   │   ├── entity/        # JPA Entities (Database mapping)
+│   │   │   ├── repository/    # JPA Repositories (Database access/queries)
+│   │   │   ├── service/       # Business logic layer
+│   │   │   └── RegNrruBackendApplication.java  # Main Application class
+│   │   └── resources/
+│   │       ├── application.yml                 # Application configuration (DB, Server, Auth)
+│   │       └── db/migration/                   # Flyway DB migration scripts (V1, V2, etc.)
+│   └── test/                  # Unit and Integration tests
+```
