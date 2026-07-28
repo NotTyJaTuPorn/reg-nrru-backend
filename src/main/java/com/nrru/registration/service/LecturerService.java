@@ -57,7 +57,7 @@ public class LecturerService {
     }
 
     public List<Enrollment> getAdviseeSchedule(Long studentId, Long lecturerUserId) {
-        Student student = studentRepository.findById(Math.toIntExact(studentId))
+        Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         if (student.getUserAdvisor() == null || !student.getUserAdvisor().getUserId().equals(lecturerUserId)) {
             throw new RuntimeException("Unauthorized: This student is not your advisee");
