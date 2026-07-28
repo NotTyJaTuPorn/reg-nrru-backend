@@ -1,0 +1,1 @@
+ALTER TABLE students ADD COLUMN tuition_paid BOOLEAN DEFAULT FALSE;

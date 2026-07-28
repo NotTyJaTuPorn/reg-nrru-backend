@@ -54,6 +54,7 @@ CREATE TABLE students (
                           advisor_user_id BIGINT REFERENCES users(user_id),
                           cumulative_gpa DECIMAL(3,2) DEFAULT 0.00,
                           accumulated_credits INT DEFAULT 0,
+                          tuition_paid BOOLEAN DEFAULT FALSE,
                           created_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                           updated_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

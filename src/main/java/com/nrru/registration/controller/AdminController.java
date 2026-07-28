@@ -43,6 +43,16 @@ public class AdminController {
         }
     }
 
+    @PutMapping("/students/{studentId}")
+    public ResponseEntity<?> updateStudent(@PathVariable Long studentId, @RequestBody UpdateStudentRequest req) {
+        try {
+            Student student = adminService.updateStudent(studentId, req);
+            return ResponseEntity.ok(Map.of("message", "แก้ไขข้อมูลนักศึกษาสำเร็จ", "studentId", student.getStudentId()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/students/{studentId}")
     public ResponseEntity<?> deleteStudent(@PathVariable Long studentId) {
         try {
@@ -56,7 +66,7 @@ public class AdminController {
     // ===================== LECTURERS =====================
 
     @GetMapping("/lecturers")
-    public ResponseEntity<List<Lecturer>> getAllLecturers() {
+    public ResponseEntity<List<LecturerDetailDTO>> getAllLecturers() {
         return ResponseEntity.ok(adminService.getAllLecturers());
     }
 
@@ -65,6 +75,16 @@ public class AdminController {
         try {
             Lecturer lecturer = adminService.createLecturer(req);
             return ResponseEntity.ok(Map.of("message", "เพิ่มอาจารย์สำเร็จ", "lecturerId", lecturer.getLecturerId()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/lecturers/{lecturerId}")
+    public ResponseEntity<?> updateLecturer(@PathVariable Long lecturerId, @RequestBody UpdateLecturerRequest req) {
+        try {
+            LecturerDetailDTO lecturer = adminService.updateLecturer(lecturerId, req);
+            return ResponseEntity.ok(Map.of("message", "แก้ไขข้อมูลอาจารย์สำเร็จ", "lecturerId", lecturer.getLecturerId()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -176,5 +196,42 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<List<User>> getUsers(@RequestParam(required = false) String role) {
         return ResponseEntity.ok(adminService.getUsersByRole(role));
+    }
+
+    // ===================== REGISTRATION SLOTS =====================
+
+    @GetMapping("/registration-slots")
+    public ResponseEntity<List<RegistrationSlot>> getAllRegistrationSlots() {
+        return ResponseEntity.ok(adminService.getAllRegistrationSlots());
+    }
+
+    @PostMapping("/registration-slots")
+    public ResponseEntity<?> createRegistrationSlot(@RequestBody RegistrationSlot slot) {
+        try {
+            RegistrationSlot created = adminService.createRegistrationSlot(slot);
+            return ResponseEntity.ok(created);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/registration-slots/{id}")
+    public ResponseEntity<?> updateRegistrationSlot(@PathVariable Long id, @RequestBody RegistrationSlot slot) {
+        try {
+            RegistrationSlot updated = adminService.updateRegistrationSlot(id, slot);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/registration-slots/{id}")
+    public ResponseEntity<?> deleteRegistrationSlot(@PathVariable Long id) {
+        try {
+            adminService.deleteRegistrationSlot(id);
+            return ResponseEntity.ok(Map.of("message", "ลบช่วงเวลาลงทะเบียนสำเร็จ"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

@@ -44,6 +44,9 @@ public class Student {
     @Column(name = "accumulated_credits")
     private Integer accumulatedCredits = 0;
 
+    @Column(name = "tuition_paid")
+    private Boolean tuitionPaid = false;
+
     @Column(name = "created_datetime")
     private LocalDateTime createdDatetime = LocalDateTime.now();
 

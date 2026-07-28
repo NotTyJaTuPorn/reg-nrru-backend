@@ -63,3 +63,7 @@ If you (the agent) need to make a change, include in the PR description: which f
 
 ---
 Updated with latest JWT Authentication, Enrollment Controller, and Service layer implementation context.
+- Added `RegistrationSlot` entity, repository, and CRUD services/endpoints for semester management.
+- Joined lecturer data with user details (`LecturerDetailDTO`) and updated admin endpoints.
+- Added student and lecturer edit endpoints.
+- Added `/api/students/profile` endpoint.

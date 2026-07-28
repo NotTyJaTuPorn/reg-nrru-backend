@@ -21,6 +21,7 @@ public class AdminService {
     private final CourseRepository courseRepository;
     private final FacultyRepository facultyRepository;
     private final DepartmentRepository departmentRepository;
+    private final RegistrationSlotRepository registrationSlotRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AdminService(UserRepository userRepository,
@@ -29,6 +30,7 @@ public class AdminService {
                         CourseRepository courseRepository,
                         FacultyRepository facultyRepository,
                         DepartmentRepository departmentRepository,
+                        RegistrationSlotRepository registrationSlotRepository,
                         PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
@@ -36,6 +38,7 @@ public class AdminService {
         this.courseRepository = courseRepository;
         this.facultyRepository = facultyRepository;
         this.departmentRepository = departmentRepository;
+        this.registrationSlotRepository = registrationSlotRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -94,7 +97,41 @@ public class AdminService {
         student.setStudentCode(req.getStudentCode());
         student.setCurrentYear(req.getCurrentYear());
         student.setDepartment(dept);
+        student.setTuitionPaid(req.getTuitionPaid() != null ? req.getTuitionPaid() : false);
         student.setCreatedDatetime(LocalDateTime.now());
+        student.setUpdatedDatetime(LocalDateTime.now());
+        return studentRepository.save(student);
+    }
+
+    @Transactional
+    public Student updateStudent(Long studentId, UpdateStudentRequest req) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบนักศึกษา ID: " + studentId));
+
+        Department dept = departmentRepository.findById(req.getDepartmentId())
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบภาควิชา ID: " + req.getDepartmentId()));
+
+        // Update User
+        User user = student.getUser();
+        if (req.getPassword() != null && !req.getPassword().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
+        }
+        user.setEmail(req.getEmail());
+        user.setTitleTh(req.getTitleTh());
+        user.setFirstNameTh(req.getFirstNameTh());
+        user.setLastNameTh(req.getLastNameTh());
+        user.setFirstNameEn(req.getFirstNameEn());
+        user.setLastNameEn(req.getLastNameEn());
+        user.setPhoneNumber(req.getPhoneNumber());
+        user.setUpdatedDatetime(LocalDateTime.now());
+        userRepository.save(user);
+
+        // Update Student
+        student.setCurrentYear(req.getCurrentYear());
+        student.setDepartment(dept);
+        if (req.getTuitionPaid() != null) {
+            student.setTuitionPaid(req.getTuitionPaid());
+        }
         student.setUpdatedDatetime(LocalDateTime.now());
         return studentRepository.save(student);
     }
@@ -110,8 +147,29 @@ public class AdminService {
 
     // ===================== LECTURERS =====================
 
-    public List<Lecturer> getAllLecturers() {
-        return lecturerRepository.findAll();
+    public List<LecturerDetailDTO> getAllLecturers() {
+        List<Lecturer> lecturers = lecturerRepository.findAll();
+        return lecturers.stream().map(lec -> {
+            LecturerDetailDTO dto = new LecturerDetailDTO();
+            dto.setLecturerId(lec.getLecturerId());
+            dto.setUserId(lec.getUserId());
+            dto.setLecturerCode(lec.getLecturerCode());
+            dto.setAcademicRank(lec.getAcademicRank());
+            dto.setDepartment(lec.getDepartment());
+
+            userRepository.findById(lec.getUserId()).ifPresent(user -> {
+                dto.setLoginId(user.getLoginId());
+                dto.setEmail(user.getEmail());
+                dto.setTitleTh(user.getTitleTh());
+                dto.setFirstNameTh(user.getFirstNameTh());
+                dto.setLastNameTh(user.getLastNameTh());
+                dto.setTitleEn(user.getTitleEn());
+                dto.setFirstNameEn(user.getFirstNameEn());
+                dto.setLastNameEn(user.getLastNameEn());
+                dto.setPhoneNumber(user.getPhoneNumber());
+            });
+            return dto;
+        }).toList();
     }
 
     @Transactional
@@ -153,6 +211,58 @@ public class AdminService {
         lecturer.setCreatedDatetime(LocalDateTime.now());
         lecturer.setUpdatedDatetime(LocalDateTime.now());
         return lecturerRepository.save(lecturer);
+    }
+
+    @Transactional
+    public LecturerDetailDTO updateLecturer(Long lecturerId, UpdateLecturerRequest req) {
+        Lecturer lecturer = lecturerRepository.findById(lecturerId)
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบอาจารย์ ID: " + lecturerId));
+
+        Department dept = departmentRepository.findById(req.getDepartmentId())
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบภาควิชา ID: " + req.getDepartmentId()));
+
+        // Update user
+        User user = userRepository.findById(lecturer.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบผู้ใช้งาน ID: " + lecturer.getUserId()));
+
+        if (req.getPassword() != null && !req.getPassword().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
+        }
+        user.setEmail(req.getEmail());
+        user.setTitleTh(req.getTitleTh());
+        user.setFirstNameTh(req.getFirstNameTh());
+        user.setLastNameTh(req.getLastNameTh());
+        user.setFirstNameEn(req.getFirstNameEn());
+        user.setLastNameEn(req.getLastNameEn());
+        user.setPhoneNumber(req.getPhoneNumber());
+        user.setUpdatedDatetime(LocalDateTime.now());
+        userRepository.save(user);
+
+        // Update lecturer
+        lecturer.setAcademicRank(req.getAcademicRank());
+        lecturer.setDepartment(dept);
+        lecturer.setUpdatedDatetime(LocalDateTime.now());
+        lecturerRepository.save(lecturer);
+
+        // Map and return LecturerDetailDTO
+        LecturerDetailDTO dto = new LecturerDetailDTO();
+        dto.setLecturerId(lecturer.getLecturerId());
+        dto.setUserId(lecturer.getUserId());
+        dto.setLecturerCode(lecturer.getLecturerCode());
+        dto.setAcademicRank(lecturer.getAcademicRank());
+        dto.setDepartment(lecturer.getDepartment());
+
+        dto.setLoginId(user.getLoginId());
+        dto.setEmail(user.getEmail());
+        dto.setTitleTh(user.getTitleTh());
+        dto.setFirstNameTh(user.getFirstNameTh());
+        dto.setLastNameTh(user.getLastNameTh());
+        dto.setTitleEn(user.getTitleEn());
+        dto.setFirstNameEn(user.getFirstNameEn());
+        dto.setLastNameEn(user.getLastNameEn());
+        dto.setPhoneNumber(user.getPhoneNumber());
+
+        return dto;
     }
 
     @Transactional
@@ -300,5 +410,39 @@ public class AdminService {
                     .toList();
         }
         return userRepository.findAll();
+    }
+
+    // ===================== REGISTRATION SLOTS =====================
+
+    public List<RegistrationSlot> getAllRegistrationSlots() {
+        return registrationSlotRepository.findAll();
+    }
+
+    @Transactional
+    public RegistrationSlot createRegistrationSlot(RegistrationSlot slot) {
+        slot.setCreatedDatetime(LocalDateTime.now());
+        return registrationSlotRepository.save(slot);
+    }
+
+    @Transactional
+    public RegistrationSlot updateRegistrationSlot(Long id, RegistrationSlot req) {
+        RegistrationSlot slot = registrationSlotRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบช่วงเวลาลงทะเบียน ID: " + id));
+        slot.setSemesterCode(req.getSemesterCode());
+        slot.setAcademicYear(req.getAcademicYear());
+        slot.setTargetYear(req.getTargetYear());
+        slot.setSlotStartDatetime(req.getSlotStartDatetime());
+        slot.setSlotEndDatetime(req.getSlotEndDatetime());
+        if (req.getIsActiveFlag() != null) {
+            slot.setIsActiveFlag(req.getIsActiveFlag());
+        }
+        return registrationSlotRepository.save(slot);
+    }
+
+    @Transactional
+    public void deleteRegistrationSlot(Long id) {
+        RegistrationSlot slot = registrationSlotRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบช่วงเวลาลงทะเบียน ID: " + id));
+        registrationSlotRepository.delete(slot);
     }
 }

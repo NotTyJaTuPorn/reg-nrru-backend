@@ -3,10 +3,8 @@ package com.nrru.registration.dto;
 import lombok.Data;
 
 @Data
-public class CreateStudentRequest {
-    // User info
-    private String loginId;       // เช่น 6600005
-    private String password;
+public class UpdateStudentRequest {
+    private String password; // Optional: only update if provided
     private String email;
     private String titleTh;
     private String firstNameTh;
@@ -15,8 +13,6 @@ public class CreateStudentRequest {
     private String lastNameEn;
     private String phoneNumber;
 
-    // Student-specific info
-    private String studentCode;   // เช่น 6600005 (usually same as loginId)
     private int currentYear;
     private Long departmentId;
     private Boolean tuitionPaid;
