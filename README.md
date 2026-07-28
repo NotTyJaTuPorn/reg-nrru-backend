@@ -7,13 +7,13 @@
 ---
 
 ## 🛠️ เทคโนโลยีที่เลือกใช้ (Tech Stack)
-*   **ภาษาหลัก:** Java 17
-*   **เฟรมเวิร์ก:** Spring Boot 3.x
+*   **ภาษาหลัก:** Java 25
+*   **เฟรมเวิร์ก:** Spring Boot 4.0.7
 *   **การจัดการฐานข้อมูล (ORM):** Spring Data JPA (Hibernate)
 *   **ระบบความปลอดภัย:** Spring Security + Auth0 JWT (JSON Web Token)
 *   **ฐานข้อมูล:** PostgreSQL
 *   **การควบคุมเวอร์ชันฐานข้อมูล:** Flyway Database Migration
-*   **เครื่องมืออื่นๆ:** Lombok, MapStruct (ถ้ามี)
+*   **เครื่องมืออื่นๆ:** Lombok
 
 ---
 
