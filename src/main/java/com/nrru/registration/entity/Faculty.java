@@ -24,7 +24,10 @@ public class Faculty {
     @Column(name = "faculty_code", unique = true, nullable = false, length = 50)
     private String facultyCode;
 
-    @Column(name = "faculty_name_en", length = 250)
+    @Column(name = "faculty_name_th", nullable = false, length = 255)
+    private String facultyNameTh;
+
+    @Column(name = "faculty_name_en", length = 255)
     private String facultyNameEn;
 
     @CreationTimestamp

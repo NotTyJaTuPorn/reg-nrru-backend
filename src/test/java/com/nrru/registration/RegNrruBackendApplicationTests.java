@@ -9,5 +9,4 @@ class RegNrruBackendApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
 }
